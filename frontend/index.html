@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0a0f" />
+
+    <title>AutoResearcher // Multi-Agent Deep Research</title>
+    <meta name="description" content="Local-first multi-agent deep research. Three specialized agents collaborate to produce a structured, cited research report — all running on your machine." />
+
+    <meta property="og:title" content="AutoResearcher" />
+    <meta property="og:description" content="Local-first multi-agent deep research. Open-source Perplexity." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%2300d4ff'/><stop offset='100%25' stop-color='%237c3aed'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='%230a0a0f'/><circle cx='32' cy='32' r='16' fill='none' stroke='url(%23g)' stroke-width='3'/><circle cx='32' cy='32' r='5' fill='url(%23g)'/><circle cx='32' cy='8' r='3' fill='%2300d4ff'/><circle cx='56' cy='44' r='3' fill='%237c3aed'/><circle cx='10' cy='46' r='3' fill='%2300d4ff'/></svg>" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+    />
+
+    <style>
+      /* Pre-React paint — prevents white flash, establishes the cyberpunk ground truth
+         before any JS runs. */
+      :root {
+        color-scheme: dark;
+        --bg: #0a0a0f;
+        --cyan: #00d4ff;
+        --violet: #7c3aed;
+        --text: #e2e8f0;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Ambient backdrop — two radial auras + a faint grid.
+         Sits behind #root; React paints on top of it. */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(
+            ellipse 80% 60% at 20% 0%,
+            rgba(0, 212, 255, 0.08),
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 70% 60% at 85% 100%,
+            rgba(124, 58, 237, 0.1),
+            transparent 60%
+          ),
+          var(--bg);
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(226, 232, 240, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(226, 232, 240, 0.025) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 85%);
+        -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 85%);
+      }
+
+      /* Boot screen — shown until React mounts and removes #boot. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        z-index: 9999;
+        transition: opacity 320ms ease, visibility 320ms ease;
+      }
+
+      #boot.boot-hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .boot-ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 212, 255, 0.15);
+        border-top-color: var(--cyan);
+        border-right-color: var(--violet);
+        animation: boot-spin 1.1s linear infinite;
+        box-shadow:
+          0 0 24px rgba(0, 212, 255, 0.25),
+          inset 0 0 12px rgba(124, 58, 237, 0.15);
+      }
+
+      .boot-label {
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 12px;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: rgba(226, 232, 240, 0.55);
+        animation: boot-pulse 1.6s ease-in-out infinite;
+      }
+
+      .boot-label span {
+        color: var(--cyan);
+      }
+
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes boot-pulse {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 1; }
+      }
+
+      /* Custom scrollbar — matches the palette. */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, rgba(0, 212, 255, 0.35), rgba(124, 58, 237, 0.35));
+        border-radius: 10px;
+        border: 2px solid var(--bg);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, rgba(0, 212, 255, 0.6), rgba(124, 58, 237, 0.6));
+      }
+
+      ::selection {
+        background: rgba(0, 212, 255, 0.3);
+        color: #ffffff;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot-ring,
+        .boot-label {
+          animation: none;
+        }
+      }
+
+      noscript {
+        display: block;
+        max-width: 520px;
+        margin: 15vh auto;
+        padding: 24px 28px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 12px;
+        background: rgba(10, 10, 15, 0.85);
+        box-shadow: 0 0 32px rgba(0, 212, 255, 0.12);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot" aria-hidden="true">
+      <div class="boot-ring"></div>
+      <div class="boot-label">INITIALIZING <span>//</span> AUTORESEARCHER</div>
+    </div>
+
+    <div id="root"></div>
+
+    <noscript>
+      AutoResearcher requires JavaScript to run. Please enable JavaScript and reload.
+    </noscript>
+
+    <script>
+      // Dismiss the boot screen the moment React has mounted its first node.
+      // MutationObserver beats a fixed timeout — no flicker, no over-wait.
+      (function () {
+        var root = document.getElementById("root");
+        var boot = document.getElementById("boot");
+        if (!root || !boot) return;
+        var dismissed = false;
+        var dismiss = function () {
+          if (dismissed) return;
+          dismissed = true;
+          boot.classList.add("boot-hidden");
+          setTimeout(function () {
+            boot && boot.parentNode && boot.parentNode.removeChild(boot);
+          }, 400);
+        };
+        var obs = new MutationObserver(function () {
+          if (root.childNodes.length > 0) {
+            obs.disconnect();
+            dismiss();
+          }
+        });
+        obs.observe(root, { childList: true });
+        // Hard ceiling: never keep the boot screen longer than 6s.
+        setTimeout(dismiss, 6000);
+      })();
+    </script>
+
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
