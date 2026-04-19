@@ -1,0 +1,358 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Base layer — global reset + typography baseline
+   The palette vars mirror tailwind.config.js so non-Tailwind contexts
+   (React-Markdown's generated HTML, inline styles, dev shims) stay on-theme.
+   ───────────────────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --bg: #0a0a0f;
+    --bg-deep: #06060a;
+    --bg-panel: #111321;
+    --bg-border: #1f2340;
+    --cyan: #00d4ff;
+    --cyan-soft: rgba(0, 212, 255, 0.14);
+    --violet: #7c3aed;
+    --violet-soft: rgba(124, 58, 237, 0.14);
+    --ink: #e2e8f0;
+    --ink-muted: #94a3b8;
+    --ink-dim: #64748b;
+    --state-running: #00d4ff;
+    --state-done: #22c55e;
+    --state-error: #ef4444;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold text-ink-bright;
+    letter-spacing: -0.01em;
+  }
+
+  /* Focus rings — cyan halo, same shape across inputs, buttons, cards. */
+  *:focus {
+    outline: none;
+  }
+  *:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgba(10, 10, 15, 1),
+      0 0 0 4px rgba(0, 212, 255, 0.55);
+    border-radius: 0.5rem;
+  }
+
+  /* Firefox scrollbars — matches the WebKit rule in index.html. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 212, 255, 0.35) transparent;
+  }
+
+  /* Remove the ugly autofill yellow. */
+  input:-webkit-autofill,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: var(--ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--bg-panel) inset;
+    caret-color: var(--cyan);
+    transition: background-color 600000s 0s, color 600000s 0s;
+  }
+
+  /* Kill the default number input spinners — we don't use them anywhere. */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Component layer — primitives the downstream components compose.
+   These are used by name (class="panel", class="btn-primary") rather than
+   long @apply chains so the JSX stays readable.
+   ───────────────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Panels ───────────────────────────────────────────────────────────── */
+  .panel {
+    @apply relative rounded-xl2 border border-bg-border bg-bg-panel/70
+           backdrop-blur-sm shadow-panel;
+  }
+
+  .panel-raised {
+    @apply panel bg-bg-raised/80;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between gap-3 border-b border-bg-border/70
+           px-5 py-3 font-mono text-2xs uppercase tracking-terminal text-ink-muted;
+  }
+
+  .panel-body {
+    @apply p-5;
+  }
+
+  /* Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2
+           rounded-lg px-4 py-2.5 font-mono text-sm font-semibold
+           uppercase tracking-terminal transition-all duration-200 ease-out-expo
+           disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply btn relative overflow-hidden text-ink-bright;
+    background-image: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    box-shadow:
+      0 0 0 1px rgba(0, 212, 255, 0.4),
+      0 12px 32px -8px rgba(0, 212, 255, 0.35),
+      0 12px 32px -8px rgba(124, 58, 237, 0.35);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-position: 100% 50%;
+    box-shadow:
+      0 0 0 1px rgba(0, 212, 255, 0.7),
+      0 16px 40px -6px rgba(0, 212, 255, 0.55),
+      0 16px 40px -6px rgba(124, 58, 237, 0.55);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-ghost {
+    @apply btn border border-bg-border bg-bg-panel/60 text-ink-muted
+           hover:border-cyan-400/50 hover:bg-bg-hover hover:text-ink-bright;
+  }
+
+  .btn-danger {
+    @apply btn border border-state-error/40 bg-state-error/10 text-state-error
+           hover:border-state-error hover:bg-state-error/20 hover:text-red-200
+           hover:shadow-glow-error;
+  }
+
+  /* Inputs ───────────────────────────────────────────────────────────── */
+  .input-field {
+    @apply w-full resize-none rounded-xl border border-bg-border
+           bg-bg-deep/80 px-5 py-4 text-base text-ink placeholder:text-ink-faint
+           transition-colors duration-200
+           hover:border-cyan-400/30 focus:border-cyan-400/70;
+  }
+
+  /* Small text utilities ─────────────────────────────────────────────── */
+  .eyebrow {
+    @apply font-mono text-2xs uppercase tracking-cyber text-ink-dim;
+  }
+
+  .code-chip {
+    @apply inline-flex items-center rounded-md border border-bg-border
+           bg-bg-deep/60 px-1.5 py-0.5 font-mono text-xs text-cyan-300;
+  }
+
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-bg-border to-transparent;
+  }
+
+  /* Streaming caret — sits at the end of the live report while tokens arrive. */
+  .stream-caret {
+    @apply ml-0.5 inline-block h-[1.1em] w-[2px] -translate-y-[-1px]
+           bg-cyan-400 align-middle animate-caret;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.7);
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────
+     .report-prose — styling for the markdown report rendered by
+     React-Markdown. Stock Tailwind Typography would fight the cyberpunk
+     palette; this is a tight custom prose block instead.
+     ────────────────────────────────────────────────────────────────────── */
+  .report-prose {
+    @apply font-sans text-[15px] leading-relaxed text-ink;
+  }
+  .report-prose > * + * {
+    @apply mt-5;
+  }
+
+  .report-prose h1,
+  .report-prose h2,
+  .report-prose h3 {
+    @apply font-sans font-bold tracking-tight text-ink-bright;
+  }
+  .report-prose h1 {
+    @apply mt-10 text-3xl;
+    background-image: linear-gradient(135deg, #ffffff 0%, #00d4ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .report-prose h2 {
+    @apply mt-10 pb-2 text-2xl;
+    border-bottom: 1px solid rgba(31, 35, 64, 0.9);
+  }
+  .report-prose h2::before {
+    content: "§";
+    @apply mr-3 font-mono text-xl text-cyan-400;
+  }
+  .report-prose h3 {
+    @apply mt-8 text-lg text-cyan-200;
+  }
+  .report-prose h4 {
+    @apply mt-6 text-base font-semibold text-ink-bright;
+  }
+
+  .report-prose p {
+    @apply text-ink;
+  }
+
+  .report-prose a {
+    @apply text-cyan-300 no-underline transition-colors duration-150
+           hover:text-cyan-200;
+    border-bottom: 1px dashed rgba(0, 212, 255, 0.4);
+  }
+  .report-prose a:hover {
+    border-bottom-color: rgba(0, 212, 255, 0.9);
+  }
+
+  .report-prose strong {
+    @apply font-semibold text-ink-bright;
+  }
+  .report-prose em {
+    @apply text-violet-200;
+  }
+
+  .report-prose ul,
+  .report-prose ol {
+    @apply space-y-2 pl-6;
+  }
+  .report-prose ul {
+    @apply list-none;
+  }
+  .report-prose ul > li {
+    @apply relative;
+  }
+  .report-prose ul > li::before {
+    content: "";
+    @apply absolute left-[-1.1rem] top-[0.65em] h-1.5 w-1.5 rounded-full
+           bg-gradient-brand;
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+  }
+  .report-prose ol {
+    @apply list-decimal marker:font-mono marker:text-cyan-400;
+  }
+
+  .report-prose blockquote {
+    @apply rounded-r-lg border-l-2 border-violet-400/70 bg-violet-400/5
+           px-5 py-3 italic text-ink-muted;
+  }
+
+  .report-prose code {
+    @apply rounded border border-bg-border bg-bg-deep/70 px-1.5 py-0.5
+           font-mono text-[0.85em] text-cyan-300;
+  }
+  .report-prose pre {
+    @apply overflow-x-auto rounded-xl border border-bg-border
+           bg-bg-deep/90 p-4 text-sm leading-relaxed;
+  }
+  .report-prose pre code {
+    @apply border-0 bg-transparent p-0 text-ink;
+  }
+
+  .report-prose hr {
+    @apply my-10 border-none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 212, 255, 0.4),
+      rgba(124, 58, 237, 0.4),
+      transparent
+    );
+    height: 1px;
+  }
+
+  .report-prose table {
+    @apply w-full border-collapse overflow-hidden rounded-lg border border-bg-border
+           text-sm;
+  }
+  .report-prose th,
+  .report-prose td {
+    @apply border border-bg-border/70 px-3 py-2 text-left;
+  }
+  .report-prose th {
+    @apply bg-bg-raised/80 font-mono text-xs uppercase tracking-terminal
+           text-cyan-300;
+  }
+
+  /* Citation chip — matches [Source N] markers when the formatter wraps
+     them in <span class="citation"> during post-processing. Even without
+     that wrapper the report still reads fine; this is pure enhancement. */
+  .report-prose .citation,
+  .report-prose a[href^="#source-"] {
+    @apply ml-0.5 inline-flex items-center rounded-md border border-cyan-400/40
+           bg-cyan-400/10 px-1.5 py-0 font-mono text-2xs text-cyan-300
+           no-underline hover:bg-cyan-400/20;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.4);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Utility layer — small helpers that compose with Tailwind utilities.
+   ───────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Gradient border without a wrapper div — uses a masked pseudo-element.
+     Apply on any element with a background; the border stays crisp. */
+  .border-gradient {
+    position: relative;
+  }
+  .border-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Agent state borders — semantic classes for AgentCard.
+     Mirror the Tailwind `state.*` palette so they read consistently. */
+  .agent-border-idle {
+    @apply border-bg-border;
+  }
+  .agent-border-running {
+    @apply border-state-running shadow-glow-cyan-sm;
+    animation: pulse-glow 2.2s ease-in-out infinite;
+  }
+  .agent-border-done {
+    @apply border-state-done/70;
+  }
+  .agent-border-error {
+    @apply border-state-error/70 shadow-glow-error;
+  }
+  .agent-border-cancelled {
+    @apply border-state-cancelled/70;
+  }
+
+  /* No-scrollbar helper for horizontal chip strips. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
