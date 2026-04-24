@@ -473,12 +473,6 @@ The browser's `EventSource` gave up after 4 reconnect attempts. The pipeline its
 
 ---
 
-## License
-
-MIT.
-
----
-
 <div align="center">
 
 **No cloud. No keys. No telemetry.**
